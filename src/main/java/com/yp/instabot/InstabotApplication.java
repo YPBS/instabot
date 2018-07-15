@@ -34,11 +34,11 @@ public class InstabotApplication {
 	
 	private ApiInfo apiInfo() {
 	     return new ApiInfo(
-	       "My REST API", 
-	       "Some custom description of API.", 
+	       "Instabot REST API", 
+	       "Invoke autolikes for list of accounts", 
 	       "API TOS", 
 	       "Terms of service", 
-	       new Contact("John Doe", "www.example.com", "myeaddress@company.com"), 
+	       null, 
 	       "License of API", "API license URL", Collections.emptyList());
 	}
 }
