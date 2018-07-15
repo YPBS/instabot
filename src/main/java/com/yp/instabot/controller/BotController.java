@@ -1,5 +1,6 @@
 package com.yp.instabot.controller;
 
+import java.io.File;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -37,7 +38,11 @@ public class BotController {
 	@RequestMapping(value="/work", method=RequestMethod.POST, consumes=MediaType.MULTIPART_FORM_DATA_VALUE)	
 	public void doWork(@RequestParam("file") MultipartFile file, HttpServletRequest httpRequest, HttpServletResponse httpResponse ) {
     	log.info("File Name: " + (file == null ? "null" : file.getOriginalFilename()));
-    	botService.doWork();
+
+    	if(file != null) {
+    		File standardFile = new File(file.getOriginalFilename());
+    		botService.doWork(standardFile);
+    	}
 	}
     
     @ExceptionHandler(Exception.class)

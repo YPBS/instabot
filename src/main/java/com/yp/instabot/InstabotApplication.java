@@ -2,11 +2,14 @@ package com.yp.instabot;
 
 import java.util.Collections;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.PropertySource;
 
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -18,9 +21,16 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @EnableSwagger2
 @EnableAutoConfiguration(exclude={MultipartAutoConfiguration.class})
+@PropertySource("classpath:application.properties")
 public class InstabotApplication {
-
+	
+	private static final Logger log = LoggerFactory.getLogger(InstabotApplication.class);
+	
 	public static void main(String[] args) {
+		
+		Thread.setDefaultUncaughtExceptionHandler( (t, e) ->{
+			log.error("Uncaught exception: " + e.getMessage(), e);
+		});
 		SpringApplication.run(InstabotApplication.class, args);
 	}
 	
@@ -44,7 +54,4 @@ public class InstabotApplication {
 	       "License of API", "API license URL", Collections.emptyList());
 	}
 	
-	
-    
-    
 }

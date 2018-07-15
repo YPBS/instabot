@@ -15,7 +15,7 @@ public class ApplicationContextHolder implements ApplicationContextAware {
 		ApplicationContextHolder.applicationContext = applicationContext;
 	}
 	
-	public ApplicationContext getApplicationContextHolder() {
+	public static ApplicationContext getApplicationContextHolder() {
 		return applicationContext;
 	}
 
