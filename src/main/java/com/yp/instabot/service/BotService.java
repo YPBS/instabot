@@ -19,7 +19,12 @@ public class BotService {
 			@Override
 			public void run() {
 				InstabotTemplate instabot = new InstabotTemplateImpl(executor, file);
-				instabot.work();
+				try {
+					instabot.work();
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 	}
