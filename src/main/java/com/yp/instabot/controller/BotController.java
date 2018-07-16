@@ -1,6 +1,7 @@
 package com.yp.instabot.controller;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +42,11 @@ public class BotController {
 
     	if(file != null) {
     		File standardFile = new File(file.getOriginalFilename());
+    		try {
+				file.transferTo(standardFile);
+			} catch (IllegalStateException | IOException e) {
+				throw new RuntimeException(e);
+			}
     		botService.doWork(standardFile);
     	}
 	}
@@ -57,9 +63,9 @@ public class BotController {
     	}
     	
     	String errorMessage = new StringBuilder("Path: ").append(req.getContextPath()).append("\n")
-    			.append(" ,Method: ").append(req.getMethod()).append("\n")
-    			.append(" ,Params: ").append(params.toString()).append("\n")
-    			.append(" ,Error: ").append(ex.getMessage()).toString();
+    			.append(" Method: ").append(req.getMethod()).append("\n")
+    			.append(" Params: ").append(params.toString()).append("\n")
+    			.append(" Error: ").append(ex.getMessage()).toString();
     	log.error(errorMessage);
     	log.error("Error: ", ex);
     	
