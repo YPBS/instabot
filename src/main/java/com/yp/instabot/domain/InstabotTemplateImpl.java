@@ -8,13 +8,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -34,7 +34,6 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 	private Environment env;
 	private Set<String> accounts = null;
 	private ExecutorService executor;
-	private Semaphore sem = new Semaphore(10);
 	private AtomicInteger successCount = new AtomicInteger();
 	private AtomicInteger errorCount = new AtomicInteger();
 	private AtomicInteger totalCount = new AtomicInteger();
@@ -42,6 +41,9 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 	public InstabotTemplateImpl(ExecutorService executor, File file) {
 		this.file = file;
 		this.executor = executor;
+		
+		//ChromeOptions options = new ChromeOptions();	// uncomment for Chrome headless mode for greater speed
+        //options.addArguments("headless");
 		driver = new ChromeDriver();
 
 		env = ApplicationContextHolder.getApplicationContextHolder().getEnvironment();
@@ -63,8 +65,7 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		passwordInput.sendKeys(env.getProperty("userPassword"));
 		loginButton.click();
 
-		WebElement profilePictureElement = (new WebDriverWait(driver, 10)).until(
-				ExpectedConditions.presenceOfElementLocated(By.linkText(env.getProperty("userName"))));
+		(new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.linkText(env.getProperty("userName"))));	// profilePictureElement
 
 		boolean isLoggedIn = driver.findElement(By.linkText(env.getProperty("userName"))) != null;
 
@@ -107,29 +108,26 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 			for(String account : accounts) {
 				log.info("Opening page for " + account);
 				processAccount(account);
-				
-				/*
-				sem.acquire();
-				
-				executor.submit(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							processAccount(account);
-						} finally {
-							sem.release();
-						}
-					}
-				});*/
 			}
 		}
+		
+		if(driver != null)	driver.quit();
+		executor.shutdown();
+		
+		log.info(" ***************** STATISTICS ************************");
+		log.info("Total: " + totalCount.get() + ", Success:" + successCount.get() + ", Error: " + errorCount.get());
 	}
 	
 	public void processAccount(String account) {
 		driver.get("https://www.instagram.com/" + account);
 		
-		(new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.xpath("//h1[contains(text(), '" + account + "')]")));
-		
+		try {
+			(new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.xpath("//h1[contains(text(), '" + account + "')]")));
+		}catch(Exception ex) {
+			log.error(" Error occurred while searching for profile: " + account);
+			return;
+		}
+			
 		if(driver.getTitle().contains("Page Not Found")) {
 			log.error("Page not found for " + account);
 			errorCount.incrementAndGet();
@@ -143,26 +141,41 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 			return;
 		}
 		
-		List<WebElement> images = driver.findElements(By.tagName("img"));
+		WebElement postsTextSpan = null;
+		WebElement imagesDiv = null;
+		List<WebElement> images = null;
+		try {
+			postsTextSpan = driver.findElement(By.xpath("//span[text() = 'Posts']"));
+			imagesDiv = postsTextSpan.findElement(By.xpath("ancestor-or-self::div/following-sibling::div"));
+			images = imagesDiv.findElements(By.tagName("img"));	
+		}catch(Exception ex) {
+			log.error("Error occurred while finding firs image", ex);
+			return;
+		}
+
 		
-		if(images != null && images.size() == 1) {
+		if(images != null && images.size() == 0) {
 			log.error("No images for: " + account);
 			errorCount.incrementAndGet();
 			return;
 		}
 		
 		// open first image
-		WebElement element = images.get(1); 		// https://stackoverflow.com/questions/11908249/debugging-element-is-not-clickable-at-point-error
+		WebElement element = images.get(0); 		// https://stackoverflow.com/questions/11908249/debugging-element-is-not-clickable-at-point-error
 		Actions actions = new Actions(driver);
 		actions.moveToElement(element).doubleClick().perform();
 		
 		// wait for first image to open wide and search for like button
-		WebElement likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[contains(text(), 'Like')]")));
-		
-		likeButton.click();
-		
-		log.info("Successfully liked image for: " + account);
-		successCount.incrementAndGet();
+		WebElement likeButton = null;
+		try{
+			likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[contains(text(), 'Like')]")));
+			likeButton.click();
+			log.info("Successfully liked image for: " + account);
+			successCount.incrementAndGet();
+		}catch(Exception ex) {
+			errorCount.incrementAndGet();
+			log.error("LIKE button not found on first imagefor : " + account, ex.getMessage());
+		}
 	}
 	
 	public boolean isElementPresent(By locatorKey) {
