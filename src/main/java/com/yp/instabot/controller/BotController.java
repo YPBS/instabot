@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -22,6 +23,7 @@ import com.yp.instabot.service.BotService;
 
 import io.swagger.annotations.ApiOperation;
 
+@ControllerAdvice
 @RestController
 public class BotController {
 	
@@ -36,7 +38,7 @@ public class BotController {
 	}
 	
     @ApiOperation(value = "Like pictures of accounts mentioned in the file", produces = "application/json", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@RequestMapping(value="/work", method=RequestMethod.POST, consumes=MediaType.MULTIPART_FORM_DATA_VALUE)	
+	@RequestMapping(value="/perform-likes", method=RequestMethod.POST, consumes=MediaType.MULTIPART_FORM_DATA_VALUE)	
 	public void doWork(@RequestParam("file") MultipartFile file, HttpServletRequest httpRequest, HttpServletResponse httpResponse ) {
     	log.info("File Name: " + (file == null ? "null" : file.getOriginalFilename()));
 

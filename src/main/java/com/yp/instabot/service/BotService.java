@@ -26,7 +26,7 @@ public class BotService {
 				try {
 					instabot.work();
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.error("Error while performing work: ", e);
 				} finally {
 					long end = System.currentTimeMillis();
 					log.info("Total time taken for processing: " + (end-start) + " ms.");

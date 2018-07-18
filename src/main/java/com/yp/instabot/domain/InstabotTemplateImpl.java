@@ -41,12 +41,16 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 	public InstabotTemplateImpl(ExecutorService executor, File file) {
 		this.file = file;
 		this.executor = executor;
-		
-		//ChromeOptions options = new ChromeOptions();	// uncomment for Chrome headless mode for greater speed
-        //options.addArguments("headless");
-		driver = new ChromeDriver();
-
 		env = ApplicationContextHolder.getApplicationContextHolder().getEnvironment();
+		
+		// Instantiate driver based on whether vm argument of headless=true is provide
+		if(env.getProperty("headless") != null && "true".equalsIgnoreCase(env.getProperty("headless"))) {
+			ChromeOptions options = new ChromeOptions();
+	        options.addArguments("headless");
+	        driver = new ChromeDriver(options);
+		}else {
+			driver = new ChromeDriver();
+		}
 	}
 
 	@Override
@@ -61,13 +65,13 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		WebElement usernameInput = driver.findElement(By.name(env.getProperty(Constants.INSTAGRAM.LOGIN.USERNAME_INPUT_NAME)));
 		WebElement loginButton = driver.findElement(By.xpath("//*[contains(text(), 'Log in')]"));
 
-		usernameInput.sendKeys(env.getProperty("userName"));
-		passwordInput.sendKeys(env.getProperty("userPassword"));
+		usernameInput.sendKeys(env.getProperty("username"));
+		passwordInput.sendKeys(env.getProperty("password"));
 		loginButton.click();
 
-		(new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.linkText(env.getProperty("userName"))));	// profilePictureElement
+		(new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.linkText(env.getProperty("username"))));	// profilePictureElement
 
-		boolean isLoggedIn = driver.findElement(By.linkText(env.getProperty("userName"))) != null;
+		boolean isLoggedIn = driver.findElement(By.linkText(env.getProperty("username"))) != null;
 
 		if (!isLoggedIn) {
 			log.error("Unable to login...");
@@ -75,9 +79,7 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 			throw new RuntimeException("Unable to login");
 		} else {
 			log.info("Successfully logged in...");
-			readAccounts();
 		}
-
 	}
 
 	@Override
@@ -108,6 +110,15 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 			for(String account : accounts) {
 				log.info("Opening page for " + account);
 				processAccount(account);
+				
+				// induce artificial delay between subsequent requests to avoid rate limiting
+				if(env.getProperty("delay") != null) {
+					try {
+						Thread.sleep(Integer.parseInt(env.getProperty("delay")) * 1000);						
+					}catch(Exception ex){
+						log.warn("Unable to sleep for " + env.getProperty("delay") + " sec");
+					}
+				}
 			}
 		}
 		
