@@ -123,7 +123,6 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		}
 		
 		if(driver != null)	driver.quit();
-		executor.shutdown();
 		
 		log.info(" ***************** STATISTICS ************************");
 		log.info("Total: " + totalCount.get() + ", Success:" + successCount.get() + ", Error: " + errorCount.get());
@@ -179,7 +178,7 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		// wait for first image to open wide and search for like button
 		WebElement likeButton = null;
 		try{
-			likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.xpath("//span[contains(text(), 'Like')]")));
+			likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class^=glyphsSpriteHeart]"))); //"//span[@aria-label='Like'))]")));
 			likeButton.click();
 			log.info("Successfully liked image for: " + account);
 			successCount.incrementAndGet();
