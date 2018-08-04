@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +38,8 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 	private AtomicInteger successCount = new AtomicInteger();
 	private AtomicInteger errorCount = new AtomicInteger();
 	private AtomicInteger totalCount = new AtomicInteger();
+	
+	private Random rand = new Random();
 	
 	public InstabotTemplateImpl(ExecutorService executor, File file) {
 		this.file = file;
@@ -111,14 +114,7 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 				log.info("Opening page for " + account);
 				processAccount(account);
 				
-				// induce artificial delay between subsequent requests to avoid rate limiting
-				if(env.getProperty("delay") != null) {
-					try {
-						Thread.sleep(Integer.parseInt(env.getProperty("delay")) * 1000);						
-					}catch(Exception ex){
-						log.warn("Unable to sleep for " + env.getProperty("delay") + " sec");
-					}
-				}
+				checkDelay();
 			}
 		}
 		
@@ -126,6 +122,26 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		
 		log.info(" ***************** STATISTICS ************************");
 		log.info("Total: " + totalCount.get() + ", Success:" + successCount.get() + ", Error: " + errorCount.get());
+	}
+	
+	private void checkDelay() {
+		// induce artificial delay between subsequent requests to avoid rate limiting
+		if(env.getProperty("delay") != null) {
+			try {
+				Thread.sleep(Integer.parseInt(env.getProperty("delay")) * 1000);						
+			}catch(Exception ex){
+				log.warn("Unable to sleep for " + env.getProperty("delay") + " sec");
+			}
+		} else if(env.getProperty("randomDelay") != null) {
+			String [] intervals = env.getProperty("randomDelay").split("-");
+			int duration = getRandomNumberInRange(Integer.parseInt(intervals[0]), Integer.parseInt(intervals[1]));
+			log.info("Adding random delay of ..." + duration +" sec");
+			try {
+				Thread.sleep(duration * 1000);						
+			}catch(Exception ex){
+				log.warn("Unable to sleep for " + env.getProperty("delay") + " sec");
+			}
+		}
 	}
 	
 	public void processAccount(String account) {
@@ -178,7 +194,7 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 		// wait for first image to open wide and search for like button
 		WebElement likeButton = null;
 		try{
-			likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[class^=glyphsSpriteHeart]"))); //"//span[@aria-label='Like'))]")));
+			likeButton = (new WebDriverWait(driver, 10)).until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[aria-label^=Like]"))); //"//span[@aria-label='Like'))]")));
 			likeButton.click();
 			log.info("Successfully liked image for: " + account);
 			successCount.incrementAndGet();
@@ -197,5 +213,12 @@ public class InstabotTemplateImpl extends InstabotTemplate {
 	    }
 	}
 
+	private int getRandomNumberInRange(int min, int max) {
+		if (min >= max) {
+			throw new IllegalArgumentException("max must be greater than min");
+		}
+		
+		return rand.nextInt((max - min) + 1) + min;
+	}
 
 }
